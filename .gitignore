@@ -9,12 +9,15 @@ node_modules
 # Production
 /dist
 
-# Misc
-.DS_Store
+# Environment variables & secrets
+.env
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
+
+# Misc
+.DS_Store
 
 # Logs
 npm-debug.log*
