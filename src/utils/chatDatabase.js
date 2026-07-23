@@ -8,28 +8,46 @@ const STORAGE_KEY = 'hindimate_chat_logs_v1'
 const DEFAULT_WELCOME_MESSAGE = {
   id: 1,
   sender: 'vaani',
-  textHindi: 'नमस्ते! मैं वाणी हूँ, आपकी AI हिन्दी ट्यूटर (Gemini-Powered)। आज आप किस विषय में बात करना चाहते हैं?',
-  textHinglish: 'Namaste! Main Vaani hoon, aapki AI Hindi tutor (Gemini-Powered). Aaj aap kis vishay mein baat karna chahte hain?',
-  textEnglish: 'Hello! I am Vaani, your AI Hindi tutor (Gemini-Powered). What topic would you like to talk about today?',
-  grammarTip: 'Gemini AI is connected live! Ask anything in Hindi or English.',
+  textHindi: 'नमस्ते! मैं आपकी AI हिन्दी ट्यूटर वाणी हूँ।',
+  textHinglish: 'Namaste! Main aapki AI Hindi tutor Vaani hoon.',
+  textEnglish: 'Hello! I am your AI Hindi tutor Vaani. How can I help you today?',
+  grammarTip: 'Ask anything in Hindi or English (e.g., "How are you?", "Translate chai to English")',
   timestamp: new Date().toISOString()
 }
 
 export const chatDatabase = {
   /**
-   * Retrieve all saved chat messages from storage
-   * @returns {Array} Array of message objects
+   * Retrieve all saved chat messages from storage with sanitization
    */
   getLogs: () => {
     try {
       const stored = localStorage.getItem(STORAGE_KEY)
       if (!stored) {
-        // Initialize with default welcome message
         const initial = [DEFAULT_WELCOME_MESSAGE]
         localStorage.setItem(STORAGE_KEY, JSON.stringify(initial))
         return initial
       }
-      return JSON.parse(stored)
+      const parsed = JSON.parse(stored)
+      
+      // Auto-sanitize legacy logs that contained raw JSON string blocks
+      const sanitized = parsed.map(m => {
+        if (m.textHindi && (m.textHindi.includes('{') || m.textHindi.includes('```json'))) {
+          const matchH = m.textHindi.match(/"textHindi"\s*:\s*"([^"]+)"/)
+          const matchE = m.textHindi.match(/"textEnglish"\s*:\s*"([^"]+)"/)
+          const matchHg = m.textHindi.match(/"textHinglish"\s*:\s*"([^"]+)"/)
+          const matchT = m.textHindi.match(/"grammarTip"\s*:\s*"([^"]+)"/)
+          return {
+            ...m,
+            textHindi: matchH ? matchH[1] : 'नमस्ते!',
+            textHinglish: matchHg ? matchHg[1] : '',
+            textEnglish: matchE ? matchE[1] : 'Hello!',
+            grammarTip: matchT ? matchT[1] : ''
+          }
+        }
+        return m
+      })
+
+      return sanitized
     } catch (error) {
       console.error('[chatDatabase] Error reading chat logs:', error)
       return [DEFAULT_WELCOME_MESSAGE]
@@ -38,7 +56,6 @@ export const chatDatabase = {
 
   /**
    * Save a single message or list of messages to persistent storage
-   * @param {Object|Array} messages Message object or array to append
    */
   saveMessage: (message) => {
     try {
@@ -53,19 +70,7 @@ export const chatDatabase = {
   },
 
   /**
-   * Overwrite full message list
-   * @param {Array} messageList 
-   */
-  setAllLogs: (messageList) => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(messageList))
-    } catch (error) {
-      console.error('[chatDatabase] Error setting logs:', error)
-    }
-  },
-
-  /**
-   * Clear all stored conversation logs and reset to initial welcome message
+   * Clear all stored conversation logs and reset to default
    */
   clearLogs: () => {
     try {

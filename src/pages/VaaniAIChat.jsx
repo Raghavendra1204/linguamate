@@ -5,23 +5,18 @@ import {
   Volume2, 
   Sparkles, 
   RotateCcw, 
-  Mic, 
   Check, 
   HelpCircle, 
   Languages, 
-  Zap,
-  Info,
-  Flame,
-  Bot,
-  User,
-  Play,
-  Square,
-  Trash2,
-  Download,
-  Database,
-  Key,
-  X,
-  AlertCircle
+  Bot, 
+  User, 
+  Trash2, 
+  Download, 
+  Database, 
+  Key, 
+  X, 
+  AlertCircle,
+  MessageSquare
 } from 'lucide-react'
 import PronunciationButton from '../components/common/PronunciationButton.jsx'
 import { useSpeechContext } from '../context/SpeechContext.jsx'
@@ -29,13 +24,13 @@ import { chatDatabase } from '../utils/chatDatabase.js'
 import { generateGeminiResponse, getStoredGeminiKey, saveGeminiKey } from '../utils/geminiService.js'
 
 export default function VaaniAIChat() {
-  const { speak, stop, isPlaying } = useSpeechContext()
+  const { speak } = useSpeechContext()
 
   // Load chat history from persistent database store
   const [messages, setMessages] = useState(() => chatDatabase.getLogs())
 
   const [inputText, setInputText] = useState('')
-  const [scriptMode, setScriptMode] = useState('both') // 'both', 'devanagari', 'hinglish'
+  const [scriptMode, setScriptMode] = useState('both') // 'both', 'devanagari', 'english'
   const [isTyping, setIsTyping] = useState(false)
   const [logStats, setLogStats] = useState(() => chatDatabase.getLogStats())
 
@@ -80,7 +75,6 @@ export default function VaaniAIChat() {
       timestamp: new Date().toISOString()
     }
 
-    // Save user message to React state and persistent database
     const updatedWithUser = chatDatabase.saveMessage(userMsg)
     setMessages(updatedWithUser)
     if (!textToSend) setInputText('')
@@ -100,7 +94,6 @@ export default function VaaniAIChat() {
         timestamp: new Date().toISOString()
       }
 
-      // Save Gemini response to database and update state
       const updatedWithAI = chatDatabase.saveMessage(vaaniReply)
       setMessages(updatedWithAI)
 
@@ -169,7 +162,7 @@ export default function VaaniAIChat() {
               </button>
             </h2>
             <p className="text-xs text-slate-500 dark:text-dark-400 flex items-center gap-2">
-              <span>Live Gemini 1.5 Flash AI Engine</span>
+              <span>Bilingual Hindi & English AI Coach</span>
               <span className="text-amber-500 font-semibold flex items-center gap-1">
                 <Database className="w-3 h-3" />
                 {logStats.totalMessages} Logs Saved
@@ -210,13 +203,13 @@ export default function VaaniAIChat() {
             <span className="hidden sm:inline">Clear</span>
           </button>
 
-          {/* Script Mode Selector */}
+          {/* View Mode Selector */}
           <div className="flex items-center gap-1 p-1 rounded-xl bg-slate-100 dark:bg-dark-800 border border-slate-200 dark:border-dark-700 text-xs font-semibold ml-1">
             <button
               onClick={() => setScriptMode('both')}
               className={`px-2.5 py-1 rounded-lg transition-all ${scriptMode === 'both' ? 'bg-white dark:bg-dark-700 text-brand-600 dark:text-white shadow-sm font-bold' : 'text-slate-500'}`}
             >
-              Both
+              Hindi + English
             </button>
             <button
               onClick={() => setScriptMode('devanagari')}
@@ -225,10 +218,10 @@ export default function VaaniAIChat() {
               हिन्दी
             </button>
             <button
-              onClick={() => setScriptMode('hinglish')}
-              className={`px-2.5 py-1 rounded-lg transition-all ${scriptMode === 'hinglish' ? 'bg-white dark:bg-dark-700 text-brand-600 dark:text-white shadow-sm font-bold' : 'text-slate-500'}`}
+              onClick={() => setScriptMode('english')}
+              className={`px-2.5 py-1 rounded-lg transition-all ${scriptMode === 'english' ? 'bg-white dark:bg-dark-700 text-brand-600 dark:text-white shadow-sm font-bold' : 'text-slate-500'}`}
             >
-              Hinglish
+              English Only
             </button>
           </div>
         </div>
@@ -258,44 +251,42 @@ export default function VaaniAIChat() {
             className={`flex flex-col max-w-[85%] sm:max-w-[75%] ${msg.sender === 'user' ? 'ml-auto items-end' : 'mr-auto items-start'}`}
           >
             <div
-              className={`p-3.5 rounded-2xl shadow-sm text-xs md:text-sm space-y-1.5 ${
+              className={`p-4 rounded-2xl shadow-sm text-xs md:text-sm space-y-2 ${
                 msg.sender === 'user'
                   ? 'bg-brand-600 text-white rounded-br-none'
                   : 'bg-white dark:bg-dark-800 text-slate-900 dark:text-white border border-slate-200/80 dark:border-dark-700/80 rounded-bl-none'
               }`}
             >
-              {/* Devanagari text */}
-              {(scriptMode === 'both' || scriptMode === 'devanagari') && (
-                <div className="font-extrabold text-sm md:text-base leading-relaxed flex items-center justify-between gap-3">
+              {/* Devanagari Hindi Text */}
+              {(scriptMode === 'both' || scriptMode === 'devanagari') && msg.textHindi && (
+                <div className="font-extrabold text-sm md:text-base leading-relaxed flex items-start justify-between gap-3">
                   <span>{msg.textHindi}</span>
-                  {msg.textHindi && (
-                    <PronunciationButton
-                      text={msg.textHindi}
-                      speakerId={`msg_${msg.id}`}
-                      size="sm"
-                      variant={msg.sender === 'user' ? 'solid' : 'ghost'}
-                    />
-                  )}
+                  <PronunciationButton
+                    text={msg.textHindi}
+                    speakerId={`msg_${msg.id}`}
+                    size="sm"
+                    variant={msg.sender === 'user' ? 'solid' : 'ghost'}
+                  />
                 </div>
               )}
 
-              {/* Hinglish Roman text */}
-              {(scriptMode === 'both' || scriptMode === 'hinglish') && msg.textHinglish && (
-                <div className={`text-xs ${msg.sender === 'user' ? 'text-indigo-100' : 'text-slate-500 dark:text-dark-400'} italic font-medium`}>
-                  {msg.textHinglish}
+              {/* Clear English Answer / Translation */}
+              {(scriptMode === 'both' || scriptMode === 'english') && msg.textEnglish && (
+                <div className={`text-xs md:text-sm font-medium ${msg.sender === 'user' ? 'text-indigo-100' : 'text-slate-700 dark:text-slate-200'} pt-1 border-t ${msg.sender === 'user' ? 'border-indigo-400/30' : 'border-slate-100 dark:border-dark-700/60'}`}>
+                  {msg.textEnglish}
                 </div>
               )}
 
-              {/* English Translation */}
-              {msg.textEnglish && (
-                <div className={`text-[11px] pt-1 border-t ${msg.sender === 'user' ? 'border-indigo-400/30 text-indigo-100' : 'border-slate-200/60 dark:border-dark-700/60 text-slate-400 dark:text-dark-400'}`}>
-                  "{msg.textEnglish}"
+              {/* Hinglish Roman Text (if in Both mode) */}
+              {scriptMode === 'both' && msg.textHinglish && msg.textHinglish !== msg.textHindi && (
+                <div className={`text-[11px] ${msg.sender === 'user' ? 'text-indigo-200' : 'text-slate-400 dark:text-dark-400'} italic`}>
+                  [{msg.textHinglish}]
                 </div>
               )}
             </div>
 
-            {/* Grammar Tip Box */}
-            {msg.grammarTip && (
+            {/* Grammar / Linguistic Tip Box */}
+            {msg.grammarTip && !msg.grammarTip.includes('Custom response for') && (
               <div className="mt-1.5 p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-700 dark:text-amber-300 text-xs flex items-start justify-between gap-2 max-w-md">
                 <div className="flex items-start gap-2">
                   <Sparkles className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5" />
@@ -319,7 +310,7 @@ export default function VaaniAIChat() {
         {isTyping && (
           <div className="flex items-center gap-2 p-2.5 rounded-xl bg-white dark:bg-dark-800 border border-slate-200 dark:border-dark-700 w-fit text-slate-500 dark:text-dark-400 text-xs font-semibold animate-pulse">
             <Sparkles className="w-4 h-4 text-amber-500 animate-spin" />
-            <span>Gemini AI is generating custom response...</span>
+            <span>Gemini AI is generating custom Hindi & English response...</span>
           </div>
         )}
 
@@ -355,7 +346,7 @@ export default function VaaniAIChat() {
           value={inputText}
           onChange={(e) => setInputText(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-          placeholder="Ask anything in Hindi or English (e.g. Translate 'I love tea' to Hindi / नमस्ते)..."
+          placeholder="Ask anything in Hindi or English (e.g. How are you doing? / Translate chai)..."
           disabled={isTyping}
           className="flex-1 px-4 py-3 rounded-2xl bg-white dark:bg-dark-900 border border-slate-200 dark:border-dark-700 focus-ring text-xs md:text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-dark-500 shadow-sm disabled:opacity-50"
         />
