@@ -249,7 +249,7 @@ export default function VaaniAIChat() {
               {/* Devanagari Hindi Text */}
               {(scriptMode === 'both' || scriptMode === 'devanagari') && msg.textHindi && (
                 <div className="font-extrabold text-sm md:text-base leading-relaxed flex items-start justify-between gap-3">
-                  <span>{msg.textHindi}</span>
+                  <span className="whitespace-pre-line">{msg.textHindi}</span>
                   <PronunciationButton
                     text={msg.textHindi}
                     speakerId={`msg_${msg.id}`}
@@ -260,14 +260,14 @@ export default function VaaniAIChat() {
               )}
 
               {/* Clear English Answer / Translation */}
-              {(scriptMode === 'both' || scriptMode === 'english') && msg.textEnglish && (
-                <div className={`text-xs md:text-sm font-medium ${msg.sender === 'user' ? 'text-indigo-100' : 'text-slate-700 dark:text-slate-200'} pt-1 border-t ${msg.sender === 'user' ? 'border-indigo-400/30' : 'border-slate-100 dark:border-dark-700/60'}`}>
+              {(scriptMode === 'both' || scriptMode === 'english') && msg.textEnglish && msg.textEnglish !== msg.textHindi && (
+                <div className={`text-xs md:text-sm font-medium ${msg.sender === 'user' ? 'text-indigo-100' : 'text-slate-700 dark:text-slate-200'} pt-1.5 border-t ${msg.sender === 'user' ? 'border-indigo-400/30' : 'border-slate-100 dark:border-dark-700/60'} whitespace-pre-line`}>
                   {msg.textEnglish}
                 </div>
               )}
 
               {/* Hinglish Roman Text (if in Both mode) */}
-              {scriptMode === 'both' && msg.textHinglish && msg.textHinglish !== msg.textHindi && (
+              {scriptMode === 'both' && msg.textHinglish && msg.textHinglish !== msg.textHindi && msg.textHinglish !== msg.textEnglish && (
                 <div className={`text-[11px] ${msg.sender === 'user' ? 'text-indigo-200' : 'text-slate-400 dark:text-dark-400'} italic`}>
                   [{msg.textHinglish}]
                 </div>

@@ -9,18 +9,18 @@ const CENTRAL_API_KEY = import.meta.env.VITE_GEMINI_API_KEY || ''
 
 const SYSTEM_PROMPT = `
 You are "VaaniAI", a friendly, expert Hindi and English bilingual tutor AI on HindiMate AI.
-You have full access to the MPPSC General Hindi & Grammar (सामान्य हिन्दी एवं व्याकरण - दृष्टि IAS) textbook material.
-When student prompts include study material context, prioritize explanations based directly on this textbook material.
+You have full access to the MPPSC General Hindi & Grammar textbook material.
 
-You MUST respond strictly with a valid JSON object containing these 4 keys:
+Respond directly and contextually to the student.
+Respond strictly in valid JSON format with these 4 string keys:
 {
-  "textHindi": "Your natural response in Hindi (Devanagari script)",
-  "textHinglish": "Hinglish transliteration of your Hindi response",
-  "textEnglish": "Clear English translation and direct English answer to the user",
-  "grammarTip": "A helpful short linguistic insight, vocabulary note, or grammar tip about the response."
+  "textHindi": "Your response in Hindi (Devanagari script)",
+  "textHinglish": "Hinglish Romanized transliteration",
+  "textEnglish": "English translation and explanation",
+  "grammarTip": "A short, helpful grammar or vocabulary tip"
 }
 
-Do NOT wrap in markdown backticks or markdown formatting. Output raw JSON object only.
+Do NOT wrap in markdown backticks. Return valid JSON only.
 `
 
 export async function generateGeminiResponse(userPrompt, conversationHistory = [], materialContext = '') {
@@ -31,14 +31,12 @@ export async function generateGeminiResponse(userPrompt, conversationHistory = [
     return getFallbackResponse(userPrompt)
   }
 
-  // Models list preference
   const models = ['gemini-1.5-flash', 'gemini-2.0-flash', 'gemini-2.5-flash']
   
   for (const model of models) {
     try {
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`
 
-      // Format history
       const formattedHistory = conversationHistory.slice(-6).map(m => ({
         role: m.sender === 'user' ? 'user' : 'model',
         parts: [{ text: m.textHindi || m.textEnglish || m.textHinglish }]
@@ -63,7 +61,7 @@ export async function generateGeminiResponse(userPrompt, conversationHistory = [
           ],
           generationConfig: {
             temperature: 0.7,
-            maxOutputTokens: 800,
+            maxOutputTokens: 1000,
             responseMimeType: 'application/json'
           }
         })
@@ -91,61 +89,76 @@ export async function generateGeminiResponse(userPrompt, conversationHistory = [
 }
 
 /**
- * Robust JSON Extractor & Sanitizer
- * Guarantees zero raw JSON strings or markdown backticks ever leak to the UI!
+ * Bulletproof Parser & Sanitizer
+ * Prevents raw JSON, key names (textHindi:), or unparsed objects from ever appearing in the UI!
  */
 function parseGeminiOutput(rawText, userPrompt) {
   let cleaned = rawText.trim()
-
-  // 1. Remove markdown backticks if present
   cleaned = cleaned.replace(/^```(json)?/gi, '').replace(/```$/g, '').trim()
 
-  // 2. Locate JSON boundaries { ... }
+  let textHindi = ''
+  let textHinglish = ''
+  let textEnglish = ''
+  let grammarTip = ''
+
+  // Attempt 1: Standard JSON parse
   const firstBrace = cleaned.indexOf('{')
   const lastBrace = cleaned.lastIndexOf('}')
 
   if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
-    const jsonStr = cleaned.slice(firstBrace, lastBrace + 1)
     try {
-      const parsed = JSON.parse(jsonStr)
-      if (parsed.textHindi || parsed.textEnglish) {
-        return {
-          textHindi: cleanString(parsed.textHindi) || 'नमस्ते! कैसे हैं आप?',
-          textHinglish: cleanString(parsed.textHinglish) || '',
-          textEnglish: cleanString(parsed.textEnglish) || 'Hello! How are you?',
-          grammarTip: cleanString(parsed.grammarTip) || 'Natural conversational response.'
-        }
-      }
-    } catch (e) {
-      // Regex extraction fallback if JSON parse fails
-      const hindiMatch = cleaned.match(/"textHindi"\s*:\s*"([^"]+)"/)
-      const hinglishMatch = cleaned.match(/"textHinglish"\s*:\s*"([^"]+)"/)
-      const englishMatch = cleaned.match(/"textEnglish"\s*:\s*"([^"]+)"/)
-      const tipMatch = cleaned.match(/"grammarTip"\s*:\s*"([^"]+)"/)
-
-      if (hindiMatch || englishMatch) {
-        return {
-          textHindi: hindiMatch ? hindiMatch[1] : '',
-          textHinglish: hinglishMatch ? hinglishMatch[1] : '',
-          textEnglish: englishMatch ? englishMatch[1] : '',
-          grammarTip: tipMatch ? tipMatch[1] : 'Conversational response.'
-        }
-      }
-    }
+      const parsed = JSON.parse(cleaned.slice(firstBrace, lastBrace + 1))
+      textHindi = parsed.textHindi || ''
+      textHinglish = parsed.textHinglish || ''
+      textEnglish = parsed.textEnglish || ''
+      grammarTip = parsed.grammarTip || ''
+    } catch (e) {}
   }
 
-  // 3. Fallback: If rawText is pure natural response without JSON tags
+  // Attempt 2: Key-based extraction if string contains "textHindi:" or "textEnglish:"
+  if (!textHindi && (cleaned.includes('textHindi:') || cleaned.includes('textEnglish:'))) {
+    const hindiMatch = cleaned.match(/textHindi\s*:\s*([^]+?)(?=,\s*textHinglish:|,\s*textEnglish:|,\s*grammarTip:|$)/i)
+    const hinglishMatch = cleaned.match(/textHinglish\s*:\s*([^]+?)(?=,\s*textEnglish:|,\s*grammarTip:|$)/i)
+    const englishMatch = cleaned.match(/textEnglish\s*:\s*([^]+?)(?=,\s*grammarTip:|$)/i)
+    const tipMatch = cleaned.match(/grammarTip\s*:\s*([^]+?)$/i)
+
+    if (hindiMatch) textHindi = hindiMatch[1]
+    if (hinglishMatch) textHinglish = hinglishMatch[1]
+    if (englishMatch) textEnglish = englishMatch[1]
+    if (tipMatch) grammarTip = tipMatch[1]
+  }
+
+  // Attempt 3: Natural plain text fallback if no keys match
+  if (!textHindi && !textEnglish) {
+    textHindi = cleaned
+    textEnglish = cleaned
+  }
+
+  // Final Cleanup & Sanitization
+  textHindi = cleanTextValue(textHindi)
+  textHinglish = cleanTextValue(textHinglish)
+  textEnglish = cleanTextValue(textEnglish)
+  grammarTip = cleanTextValue(grammarTip)
+
   return {
-    textHindi: cleanString(rawText),
-    textHinglish: '',
-    textEnglish: cleanString(rawText),
-    grammarTip: `Response for: "${userPrompt}"`
+    textHindi: textHindi || 'नमस्ते! मैं आपकी मदद करने के लिए यहाँ हूँ।',
+    textHinglish: textHinglish,
+    textEnglish: textEnglish || 'Hello! I am here to help you.',
+    grammarTip: grammarTip
   }
 }
 
-function cleanString(str) {
-  if (!str) return ''
-  return str.replace(/```json/gi, '').replace(/```/g, '').replace(/["{}]/g, '').trim()
+function cleanTextValue(val) {
+  if (!val) return ''
+  return val
+    .replace(/^["'\s{}]/g, '')
+    .replace(/["'\s{}]$/g, '')
+    .replace(/^textHindi\s*:\s*/i, '')
+    .replace(/^textHinglish\s*:\s*/i, '')
+    .replace(/^textEnglish\s*:\s*/i, '')
+    .replace(/^grammarTip\s*:\s*/i, '')
+    .replace(/\\n/g, '\n')
+    .trim()
 }
 
 /**

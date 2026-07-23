@@ -29,22 +29,34 @@ export const chatDatabase = {
       }
       const parsed = JSON.parse(stored)
       
-      // Auto-sanitize legacy logs that contained raw JSON string blocks
+      const cleanVal = (val) => val ? val.replace(/^["'\s{}]/g, '').replace(/["'\s{}]$/g, '').replace(/^textHindi\s*:\s*/i, '').replace(/^textHinglish\s*:\s*/i, '').replace(/^textEnglish\s*:\s*/i, '').replace(/^grammarTip\s*:\s*/i, '').replace(/\\n/g, '\n').trim() : ''
+
+      // Auto-sanitize legacy logs that contained raw JSON or key strings
       const sanitized = parsed.map(m => {
-        if (m.textHindi && (m.textHindi.includes('{') || m.textHindi.includes('```json'))) {
-          const matchH = m.textHindi.match(/"textHindi"\s*:\s*"([^"]+)"/)
-          const matchE = m.textHindi.match(/"textEnglish"\s*:\s*"([^"]+)"/)
-          const matchHg = m.textHindi.match(/"textHinglish"\s*:\s*"([^"]+)"/)
-          const matchT = m.textHindi.match(/"grammarTip"\s*:\s*"([^"]+)"/)
-          return {
-            ...m,
-            textHindi: matchH ? matchH[1] : 'नमस्ते!',
-            textHinglish: matchHg ? matchHg[1] : '',
-            textEnglish: matchE ? matchE[1] : 'Hello!',
-            grammarTip: matchT ? matchT[1] : ''
-          }
+        let h = m.textHindi || ''
+        let e = m.textEnglish || ''
+        let hg = m.textHinglish || ''
+        let t = m.grammarTip || ''
+
+        if (h.includes('textHindi:') || h.includes('{') || h.includes('```')) {
+          const matchH = h.match(/textHindi\s*:\s*([^]+?)(?=,\s*textHinglish:|,\s*textEnglish:|,\s*grammarTip:|$)/i)
+          const matchHg = h.match(/textHinglish\s*:\s*([^]+?)(?=,\s*textEnglish:|,\s*grammarTip:|$)/i)
+          const matchE = h.match(/textEnglish\s*:\s*([^]+?)(?=,\s*grammarTip:|$)/i)
+          const matchT = h.match(/grammarTip\s*:\s*([^]+?)$/i)
+
+          if (matchH) h = matchH[1]
+          if (matchHg) hg = matchHg[1]
+          if (matchE) e = matchE[1]
+          if (matchT) t = matchT[1]
         }
-        return m
+
+        return {
+          ...m,
+          textHindi: cleanVal(h) || 'नमस्ते!',
+          textHinglish: cleanVal(hg),
+          textEnglish: cleanVal(e) || 'Hello!',
+          grammarTip: cleanVal(t)
+        }
       })
 
       return sanitized
