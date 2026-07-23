@@ -1,14 +1,16 @@
 /**
  * Gemini API Service for VaaniAI Chat (HindiMate AI)
  * Connects directly to Google Gemini API using environment configuration.
+ * Supports MPPSC Hindi & Vyakaran Study Material Context Integration.
  */
 
 // Central API Key from Environment
 const CENTRAL_API_KEY = import.meta.env.VITE_GEMINI_API_KEY || ''
 
 const SYSTEM_PROMPT = `
-You are "VaaniAI", a friendly, expert Hindi and English bilingual tutor AI.
-When the user speaks to you, respond directly, naturally, and contextually to their prompt.
+You are "VaaniAI", a friendly, expert Hindi and English bilingual tutor AI on HindiMate AI.
+You have full access to the MPPSC General Hindi & Grammar (सामान्य हिन्दी एवं व्याकरण - दृष्टि IAS) textbook material.
+When student prompts include study material context, prioritize explanations based directly on this textbook material.
 
 You MUST respond strictly with a valid JSON object containing these 4 keys:
 {
@@ -21,7 +23,7 @@ You MUST respond strictly with a valid JSON object containing these 4 keys:
 Do NOT wrap in markdown backticks or markdown formatting. Output raw JSON object only.
 `
 
-export async function generateGeminiResponse(userPrompt, conversationHistory = []) {
+export async function generateGeminiResponse(userPrompt, conversationHistory = [], materialContext = '') {
   const apiKey = (CENTRAL_API_KEY && CENTRAL_API_KEY !== 'your_gemini_api_key_here') ? CENTRAL_API_KEY.trim() : ''
 
   if (!apiKey) {
@@ -42,6 +44,12 @@ export async function generateGeminiResponse(userPrompt, conversationHistory = [
         parts: [{ text: m.textHindi || m.textEnglish || m.textHinglish }]
       }))
 
+      let promptPayload = `${SYSTEM_PROMPT}\n\n`
+      if (materialContext) {
+        promptPayload += `ATTACHED STUDY MATERIAL CONTEXT:\n${materialContext}\n\n`
+      }
+      promptPayload += `Student prompt: "${userPrompt}"`
+
       const response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -50,7 +58,7 @@ export async function generateGeminiResponse(userPrompt, conversationHistory = [
             ...formattedHistory,
             {
               role: 'user',
-              parts: [{ text: `${SYSTEM_PROMPT}\n\nStudent prompt: "${userPrompt}"` }]
+              parts: [{ text: promptPayload }]
             }
           ],
           generationConfig: {

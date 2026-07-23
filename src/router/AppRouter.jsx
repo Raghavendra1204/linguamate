@@ -4,6 +4,7 @@ import AuthLayout from '../layouts/AuthLayout.jsx'
 import Dashboard from '../pages/Dashboard.jsx'
 import VaaniAIChat from '../pages/VaaniAIChat.jsx'
 import LearnModules from '../pages/LearnModules.jsx'
+import StudyMaterial from '../pages/StudyMaterial.jsx'
 import Leaderboard from '../pages/Leaderboard.jsx'
 import ProfileSettings from '../pages/ProfileSettings.jsx'
 import { ROUTES } from './routes.js'
@@ -20,6 +21,10 @@ const router = createBrowserRouter([
       {
         path: ROUTES.LEARN,
         element: <LearnModules />
+      },
+      {
+        path: ROUTES.MATERIAL,
+        element: <StudyMaterial />
       },
       {
         path: ROUTES.CHAT,

@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { 
   LayoutDashboard, 
   BookOpen, 
+  Library,
   MessageSquare, 
   Trophy, 
   User, 
@@ -30,6 +31,7 @@ export default function RootLayout() {
   const navItems = [
     { name: 'Dashboard', path: ROUTES.DASHBOARD, icon: LayoutDashboard },
     { name: 'Learn & Modules', path: ROUTES.LEARN, icon: BookOpen },
+    { name: 'Study Material', path: ROUTES.MATERIAL, icon: Library },
     { name: 'VaaniAI Chat', path: ROUTES.CHAT, icon: MessageSquare },
     { name: 'Leaderboard', path: ROUTES.LEADERBOARD, icon: Trophy },
     { name: 'Profile & Settings', path: ROUTES.PROFILE, icon: User },
@@ -156,7 +158,7 @@ export default function RootLayout() {
           </div>
         </header>
 
-        {/* INDEPENDENT SCROLLABLE CONTENT AREA (overflow-y: auto, calc(100vh - 64px)) */}
+        {/* INDEPENDENT SCROLLABLE CONTENT AREA */}
         <main className="flex-1 overflow-y-auto overflow-x-hidden p-6 relative">
           <div className="max-w-[1200px] mx-auto w-full pb-20 lg:pb-6">
             <Outlet />

@@ -6,6 +6,7 @@ export const ROUTES = {
   // App routes (Behind RootLayout)
   DASHBOARD: '/',
   LEARN: '/learn',
+  MATERIAL: '/material',
   CHAT: '/chat',
   LEADERBOARD: '/leaderboard',
   PROFILE: '/profile',

@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
+import { useLocation } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
   Send, 
@@ -13,7 +14,8 @@ import {
   Trash2, 
   Download, 
   Database, 
-  MessageSquare
+  MessageSquare,
+  FileText
 } from 'lucide-react'
 import PronunciationButton from '../components/common/PronunciationButton.jsx'
 import { useSpeechContext } from '../context/SpeechContext.jsx'
@@ -22,11 +24,13 @@ import { generateGeminiResponse } from '../utils/geminiService.js'
 
 export default function VaaniAIChat() {
   const { speak } = useSpeechContext()
+  const location = useLocation()
 
   // Load chat history from persistent database store
   const [messages, setMessages] = useState(() => chatDatabase.getLogs())
 
   const [inputText, setInputText] = useState('')
+  const [activeMaterialContext, setActiveMaterialContext] = useState(location.state?.materialContext || '')
   const [scriptMode, setScriptMode] = useState('both') // 'both', 'devanagari', 'english'
   const [isTyping, setIsTyping] = useState(false)
   const [logStats, setLogStats] = useState(() => chatDatabase.getLogStats())
@@ -36,6 +40,16 @@ export default function VaaniAIChat() {
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }
+
+  // Pre-fill input if navigated with material context from StudyMaterial.jsx
+  useEffect(() => {
+    if (location.state?.promptText) {
+      setInputText(location.state.promptText)
+    }
+    if (location.state?.materialContext) {
+      setActiveMaterialContext(location.state.materialContext)
+    }
+  }, [location.state])
 
   useEffect(() => {
     scrollToBottom()
@@ -68,8 +82,8 @@ export default function VaaniAIChat() {
     setIsTyping(true)
 
     try {
-      // Call central Gemini API service directly
-      const geminiResult = await generateGeminiResponse(text, messages)
+      // Call central Gemini API service with material context if attached
+      const geminiResult = await generateGeminiResponse(text, messages, activeMaterialContext)
 
       const vaaniReply = {
         id: Date.now() + 1,
@@ -83,6 +97,9 @@ export default function VaaniAIChat() {
 
       const updatedWithAI = chatDatabase.saveMessage(vaaniReply)
       setMessages(updatedWithAI)
+
+      // Clear material context after successful send
+      setActiveMaterialContext('')
 
       // Auto-pronounce VaaniAI response
       if (geminiResult.textHindi) {
@@ -199,6 +216,22 @@ export default function VaaniAIChat() {
         </div>
       </div>
 
+      {/* ATTACHED STUDY MATERIAL CONTEXT BANNER */}
+      {activeMaterialContext && (
+        <div className="p-3 rounded-2xl bg-indigo-500/10 border border-indigo-500/30 text-indigo-900 dark:text-indigo-200 text-xs font-medium mb-3 flex items-center justify-between gap-2 animate-fade-in">
+          <div className="flex items-center gap-2 overflow-hidden">
+            <FileText className="w-4 h-4 text-brand-600 shrink-0" />
+            <span className="truncate">Attached MPPSC Study Material Context from Textbook</span>
+          </div>
+          <button
+            onClick={() => setActiveMaterialContext('')}
+            className="text-xs font-bold text-rose-500 hover:underline shrink-0"
+          >
+            Clear Context
+          </button>
+        </div>
+      )}
+
       {/* MESSAGES VIEWPORT */}
       <div className="flex-1 overflow-y-auto p-4 rounded-2xl glass-panel border border-slate-200/80 dark:border-dark-700/80 shadow-inner space-y-3 mb-3">
         {messages.map((msg) => (
@@ -266,7 +299,7 @@ export default function VaaniAIChat() {
         {isTyping && (
           <div className="flex items-center gap-2 p-2.5 rounded-xl bg-white dark:bg-dark-800 border border-slate-200 dark:border-dark-700 w-fit text-slate-500 dark:text-dark-400 text-xs font-semibold animate-pulse">
             <Sparkles className="w-4 h-4 text-amber-500 animate-spin" />
-            <span>VaaniAI is generating custom Hindi & English response...</span>
+            <span>VaaniAI is analyzing study material & generating response...</span>
           </div>
         )}
 
@@ -302,7 +335,7 @@ export default function VaaniAIChat() {
           value={inputText}
           onChange={(e) => setInputText(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-          placeholder="Ask anything in Hindi or English (e.g. How are you doing? / Translate chai)..."
+          placeholder="Ask anything about the MPPSC study material or Hindi grammar..."
           disabled={isTyping}
           className="flex-1 px-4 py-3 rounded-2xl bg-white dark:bg-dark-900 border border-slate-200 dark:border-dark-700 focus-ring text-xs md:text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-dark-500 shadow-sm disabled:opacity-50"
         />
