@@ -1,0 +1,103 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --color-primary: 99 102 241;  /* brand-500: Indigo */
+    --color-secondary: 14 165 233; /* accent-500: Sky Blue */
+  }
+
+  html, body, #root {
+    height: 100%;
+    max-height: 100vh;
+    overflow: hidden;
+    margin: 0;
+    padding: 0;
+  }
+
+  body {
+    @apply text-slate-800 bg-slate-50 antialiased font-sans dark:bg-dark-950 dark:text-dark-50;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+
+  /* Custom thin scrollbar for premium aesthetic */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  
+  ::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    @apply bg-slate-300/60 rounded-full dark:bg-dark-700/60 transition-colors duration-200;
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-slate-400 dark:bg-dark-600;
+  }
+}
+
+@layer components {
+  /* Premium Glassmorphic Card (Light Theme) */
+  .glass-card-light {
+    background: rgba(255, 255, 255, 0.45);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.04);
+  }
+
+  /* Premium Glassmorphic Card (Dark Theme) */
+  .glass-card-dark {
+    background: rgba(15, 23, 42, 0.45);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+  }
+
+  /* Universal Glassmorphic panel that handles theme automatically */
+  .glass-panel {
+    @apply glass-card-light dark:glass-card-dark;
+  }
+
+  /* Subtler glassmorphism for nested cards and inner blocks */
+  .glass-panel-subtle {
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    @apply dark:bg-dark-900/30 dark:border-white/5;
+  }
+
+  /* Glow effect container */
+  .glow-container {
+    position: relative;
+  }
+
+  /* Premium Focus Rings for Keyboard Access */
+  .focus-ring {
+    @apply focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 dark:focus:ring-offset-dark-950;
+  }
+
+  /* Smooth custom transition helper */
+  .transition-premium {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+}
+
+/* Background ambient blur blobs for high-end SaaS feel */
+.bg-blob-indigo {
+  background: radial-gradient(circle, rgba(99, 102, 241, 0.06) 0%, rgba(99, 102, 241, 0) 70%);
+}
+
+.bg-blob-cyan {
+  background: radial-gradient(circle, rgba(14, 165, 233, 0.06) 0%, rgba(14, 165, 233, 0) 70%);
+}
+
+.bg-blob-purple {
+  background: radial-gradient(circle, rgba(168, 85, 247, 0.05) 0%, rgba(168, 85, 247, 0) 70%);
+}
