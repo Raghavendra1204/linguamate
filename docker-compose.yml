@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  hindimate-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        VITE_GEMINI_API_KEY: ${VITE_GEMINI_API_KEY:-your_gemini_api_key_here}
+    container_name: hindimate_ai_container
+    ports:
+      - "8080:80"
+    restart: always
+    environment:
+      - VITE_GEMINI_API_KEY=${VITE_GEMINI_API_KEY}
